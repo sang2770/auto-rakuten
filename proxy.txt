@@ -1,0 +1,1 @@
+global.rp.linkup.onl:10000:USER934967-zone-custom-region-JP:f13808
