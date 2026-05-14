@@ -879,7 +879,6 @@ async function changePasswordFlow(page, email, password, newPassword, tag) {
     }
     return { ok: false, message: "Không xác định được kết quả đổi pass" };
   } catch (err) {
-    console.error(`${tag} → ❌ Lỗi đổi password: ${err.message}`);
     return { ok: false, message: err.message };
   }
 }
@@ -1077,7 +1076,7 @@ async function changeEmail(page, email, password, hotmailString, tag) {
       timeout: 60000,
     });
     await checkSkip(page);
-    await sleep(3000);
+    await sleep(30000000);
 
     // If redirected to login, retry
     if (page.url().includes("login.account.rakuten.com")) {
@@ -1478,7 +1477,7 @@ async function processAccountAtSlot(
         console.log(`❌ ${tag} → Đổi password thất bại`);
         const errorLine = `${acc.email}|${oldPassword}|${acc.password}|Lỗi acc die hoặc locked\n`;
         fs.appendFileSync(
-          path.resolve(__dirname, "acc_die.txt"),
+          path.resolve(__dirname, "accdie.txt"),
           errorLine,
           "utf8",
         );
