@@ -1,0 +1,26 @@
+{
+  "name": "auto-rakuten",
+  "version": "1.0.0",
+  "main": "main_change.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sang2770/auto-rakuten.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sang2770/auto-rakuten/issues"
+  },
+  "homepage": "https://github.com/sang2770/auto-rakuten#readme",
+  "description": "",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "imap": "^0.8.19",
+    "mailparser": "^3.9.8",
+    "playwright": "^1.60.0",
+    "poplib": "^0.1.7"
+  }
+}
