@@ -17,6 +17,7 @@
   "homepage": "https://github.com/sang2770/auto-rakuten#readme",
   "description": "",
   "dependencies": {
+    "better-sqlite3": "^11.10.0",
     "fs": "^0.0.1-security",
     "imap": "^0.8.19",
     "mailparser": "^3.9.8",

